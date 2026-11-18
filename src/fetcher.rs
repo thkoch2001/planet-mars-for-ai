@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::time::Instant;
 use ureq::Agent;
 use ureq::tls::{TlsConfig, TlsProvider};
@@ -41,8 +41,8 @@ impl Fetcher {
         }
     }
 
-    pub fn fetch(&self, url: Url, feed_store: &FeedStore) -> Result<bool> {
-        let fetchdata = feed_store.load_fetchdata(&url)?;
+    pub fn fetch(&self, url: &Url, feed_store: &FeedStore) -> Result<bool> {
+        let fetchdata = feed_store.load_fetchdata(url)?;
         let mut builder = self
             .agent
             .get(url.to_string())
@@ -58,7 +58,7 @@ impl Fetcher {
         let result = builder.call();
         let duration = start_instant.elapsed();
 
-        let response = result?;
+        let response = result.context(format!("Error requesting {url}"))?;
         debug!(
             "fetched with status {} in {} ms: {url}",
             response.status(),
